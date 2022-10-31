@@ -31,14 +31,17 @@ logging.basicConfig(
 
 
 class TokenAccessError(Exception):
+    """ Ошибка доступа к токенам """
     pass
 
 
 class ResponseNot200(Exception):
+    """ Нет ответа API """
     pass
 
 
 def send_message(bot, message):
+    """ Функция отправки сообщений в Telegram """
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logging.info(f'Отправлено сообщение в Telegram : {message}')
@@ -76,6 +79,10 @@ def check_response(response):
 
 
 def parse_status(homework):
+    """ Обработка данных АПИ о конкретной ДЗ,
+        формирование статуса ДЗ
+        и сообщения для отпрвки в Telegram
+    """
     homework_name = homework.get('homework_name')
     try:
         homework_status = homework['status']
@@ -92,13 +99,13 @@ def parse_status(homework):
             return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
-
 def check_tokens():
-    #if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
+    """ Проверка токенов """
     if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
         return True
     else:
         logging.critical('Отсутствие обязательных переменных окружения во время запуска бота')
+        raise TokenAccessError
 
 
 def main():
