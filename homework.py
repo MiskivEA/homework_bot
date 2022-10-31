@@ -53,7 +53,6 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """Запрос к АПИ домашки, возвращает словарь с работами и текущим временем."""
-
     timestamp = current_timestamp
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
@@ -65,7 +64,6 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Вытаскиваю список работ из ответа АПИ и возвращаю их."""
-
     homeworks_list = []
     correct_response = response['homeworks'] and response['current_date']
     correct_type = isinstance(response['homeworks'], list)
@@ -84,7 +82,6 @@ def parse_status(homework):
     """Обработка данных АПИ о конкретной ДЗ.
     Формирование статуса ДЗ и сообщения для
     отпрвки в Telegram"""
-
     homework_name = homework.get('homework_name')
     try:
         homework_status = homework['status']
@@ -114,7 +111,6 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time()) - WEEK * 4
 
