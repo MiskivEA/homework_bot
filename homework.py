@@ -107,10 +107,6 @@ def check_tokens():
     """Проверка токенов."""
     if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
         return True
-    else:
-        logging.critical('Отсутствие обязательных переменных'
-                         ' окружения во время запуска бота')
-        raise TokenAccessError
 
 
 def main():
@@ -119,6 +115,8 @@ def main():
     current_timestamp = int(time.time()) - WEEK * 4
 
     if not check_tokens():
+        logging.critical('Отсутствие обязательных переменных'
+                         ' окружения во время запуска бота')
         raise TokenAccessError('Ошибка доступа к токенам')
 
     while True:
