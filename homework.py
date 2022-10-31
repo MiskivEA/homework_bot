@@ -31,17 +31,19 @@ logging.basicConfig(
 
 
 class TokenAccessError(Exception):
-    """ Ошибка доступа к токенам """
+    """Ошибка доступа к токенам"""
+
     pass
 
 
 class ResponseNot200(Exception):
-    """ Нет ответа API """
+    """Нет ответа API"""
+
     pass
 
 
 def send_message(bot, message):
-    """ Функция отправки сообщений в Telegram """
+    """Функция отправки сообщений в Telegram"""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logging.info(f'Отправлено сообщение в Telegram : {message}')
@@ -50,8 +52,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """ Запрос к АПИ домашки, возвращает словарь с работами и текущим временем"""
-    #timestamp = current_timestamp or int(time.time())
+    """Запрос к АПИ домашки, возвращает словарь с работами и текущим временем"""
 
     timestamp = current_timestamp
     params = {'from_date': timestamp}
@@ -63,7 +64,8 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
-    """ Вытаскиваю список работ из ответа АПИ и возвращаю их"""
+    """Вытаскиваю список работ из ответа АПИ и возвращаю их"""
+
     homeworks_list = []
     correct_response = response['homeworks'] and response['current_date']
     correct_type = isinstance(response['homeworks'], list)
@@ -79,10 +81,10 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """ Обработка данных АПИ о конкретной ДЗ,
-        формирование статуса ДЗ
-        и сообщения для отпрвки в Telegram
-    """
+    """Обработка данных АПИ о конкретной ДЗ,
+    формирование статуса ДЗ и сообщения для
+    отпрвки в Telegram"""
+
     homework_name = homework.get('homework_name')
     try:
         homework_status = homework['status']
@@ -93,7 +95,8 @@ def parse_status(homework):
         try:
             verdict = HOMEWORK_STATUSES[homework_status]
         except Exception as error:
-            logging.error(f'В ответе АПИ незадокументированный статус. Ошибка: {error}')
+            logging.error(f'В ответе АПИ незадокументированный статус.'
+                          f'Ошибка: {error}')
             raise error
         else:
             return f'Изменился статус проверки работы "{homework_name}". {verdict}'
@@ -104,7 +107,8 @@ def check_tokens():
     if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
         return True
     else:
-        logging.critical('Отсутствие обязательных переменных окружения во время запуска бота')
+        logging.critical('Отсутствие обязательных переменных'
+                         ' окружения во время запуска бота')
         raise TokenAccessError
 
 
@@ -126,7 +130,8 @@ def main():
                 logging.info(f'Список работ: {list_homeworks}')
 
                 homework = list_homeworks[0]
-                logging.info(f'Проверяемая работа: {homework.get("homework_name")}')
+                logging.info(f'Проверяемая работа:'
+                             f'{homework.get("homework_name")}')
 
                 message = parse_status(homework)
                 send_message(bot, message)
