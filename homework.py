@@ -82,7 +82,8 @@ def check_response(response):
 def parse_status(homework):
     """Обработка данных АПИ о конкретной ДЗ.
     Формирование статуса ДЗ и сообщения для
-    отпрвки в Telegram"""
+    отпрвки в Telegram
+    """
     homework_name = homework.get('homework_name')
     try:
         homework_status = homework['status']
@@ -97,7 +98,8 @@ def parse_status(homework):
                           f'Ошибка: {error}')
             raise error
         else:
-            return f'Изменился статус проверки работы "{homework_name}". {verdict}'
+            return (f'Изменился статус проверки работы "{homework_name}".'
+                    f' {verdict}')
 
 
 def check_tokens():
