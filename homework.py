@@ -37,7 +37,7 @@ class TokenAccessError(Exception):
 
 
 class ResponseNot200(Exception):
-    """Нет ответа API"""
+    """Нет ответа API."""
 
     pass
 
@@ -52,7 +52,8 @@ def send_message(bot, message):
 
 
 def get_api_answer(current_timestamp):
-    """Запрос к АПИ домашки, возвращает словарь с работами и текущим временем."""
+    """Запрос к АПИ домашки.
+    Возвращает словарь с работами и текущим временем"""
     timestamp = current_timestamp
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
