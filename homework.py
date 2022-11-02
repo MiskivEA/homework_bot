@@ -166,10 +166,6 @@ def main():
         except ResponseNot200 as error:
             logging.error(f'{error}')
             send_message(bot, f'{error}')
-        except KeyError as error:
-            logging.error(f'{error}')
-        except TypeError as error:
-            logging.error(f'{error}')
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
