@@ -142,7 +142,7 @@ def main():
     if not check_tokens():
         logging.critical('Отсутствие обязательных переменных'
                          ' окружения во время запуска бота')
-        raise sys.exit('Ошибка доступа к токенам')
+        sys.exit('Ошибка доступа к токенам')
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time()) - WEEK * 4
