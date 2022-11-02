@@ -156,16 +156,7 @@ def main():
             send_message(bot, message)
             current_timestamp = response.get('current_date')
             logging.info(f'Время из response: {current_timestamp}')
-        except HomeWorkError as error:
-            logging.error(f'Не получена ДЗ {error}')
-        except SpamBotError as error:
-            logging.error(f'Бот дулирует сообщения {error}')
-        except ErrorSendMessage as error:
-            logging.error(f'Сбой при отправке'
-                          f'сообщения в Telegram: {error}')
-        except ResponseNot200 as error:
-            logging.error(f'{error}')
-            send_message(bot, f'{error}')
+
         except KeyError as error:
             logging.error(f'{error}')
         except TypeError as error:
