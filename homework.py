@@ -149,13 +149,11 @@ def main():
 
     while True:
         try:
-
             response = get_api_answer(current_timestamp)
             list_homeworks = check_response(response)
             homework = get_homework(list_homeworks)
             message = parse_status(homework)
             send_message(bot, message)
-
             current_timestamp = response.get('current_date')
             logging.info(f'Время из response: {current_timestamp}')
         except HomeWorkError as error:
@@ -172,7 +170,6 @@ def main():
             logging.error(f'{error}')
         except TypeError as error:
             logging.error(f'{error}')
-
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
