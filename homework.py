@@ -8,7 +8,7 @@ import telegram
 from dotenv import load_dotenv
 
 from custom_exceptions import (ErrorSendMessage, ResponseNot200,
-                               StatusIsUnregistered)
+                               StatusIsUnregistered, SapamBotError)
 
 load_dotenv()
 
@@ -38,13 +38,20 @@ logging.basicConfig(
 )
 
 
+sent_messages = []
+
+
 def send_message(bot, message):
     """Функция отправки сообщений в Telegram."""
     try:
-        bot.send_message(TELEGRAM_CHAT_ID, message)
-        logging.info(f'Отправлено сообщение в Telegram : {message}')
+        if message not in sent_messages:
+            bot.send_message(TELEGRAM_CHAT_ID, message)
+            logging.info(f'Отправлено сообщение в Telegram : {message}')
+            sent_messages.append(message)
+        else:
+            raise SapamBotError('СпамБот')
     except Exception as error:
-        raise ErrorSendMessage(f'Ошибка отправки сообщения {error}')
+        raise ErrorSendMessage(f'Ошибка функции отправки сообщений >>> {error}')
 
 
 def get_api_answer(current_timestamp):
@@ -123,7 +130,7 @@ def main():
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time()) - WEEK * 4
-    sent_messages = []
+
     while True:
         try:
 
@@ -137,21 +144,13 @@ def main():
                              f'{homework.get("homework_name")}')
 
                 message = parse_status(homework)
-
-                try:
-                    if message not in sent_messages:
-                        send_message(bot, message)
-                        sent_messages.append(message)
-                    else:
-                        send_message(bot, 'I`m SPAM_BOT =)')
-                        logging.info('spam bot')
-
-                except Exception:
-                    raise ErrorSendMessage
+                send_message(bot, message)
 
             current_timestamp = response.get('current_date')
             logging.info(f'Время из response: {current_timestamp}')
 
+        except SapamBotError as eror:
+            logging.error(f'Бот дулирует сообщения')
         except ErrorSendMessage as error:
             logging.error(f'Сбой при отправке'
                           f'сообщения в Telegram: {error}')

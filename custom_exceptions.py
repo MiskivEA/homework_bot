@@ -14,3 +14,11 @@ class ErrorSendMessage(Exception):
     """Ошибка отправки сообщения в Telegram"""
 
     pass
+
+
+class SapamBotError(Exception):
+    """Ошибка, когда бот пытается отправить
+     сообщение, отправленное ранее.
+     """
+
+    pass
