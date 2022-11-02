@@ -174,7 +174,6 @@ def main():
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
             time.sleep(RETRY_TIME)
-
         finally:
             time.sleep(RETRY_TIME)
 
