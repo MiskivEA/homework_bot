@@ -16,9 +16,15 @@ class ErrorSendMessage(Exception):
     pass
 
 
-class SapamBotError(Exception):
+class SpamBotError(Exception):
     """Ошибка, когда бот пытается отправить
      сообщение, отправленное ранее.
      """
+
+    pass
+
+
+class HomeWorkError(Exception):
+    """Ошибка получения данных о работе"""
 
     pass

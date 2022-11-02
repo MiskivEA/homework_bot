@@ -8,7 +8,8 @@ import telegram
 from dotenv import load_dotenv
 
 from custom_exceptions import (ErrorSendMessage, ResponseNot200,
-                               StatusIsUnregistered, SapamBotError)
+                               StatusIsUnregistered, SpamBotError,
+                               HomeWorkError)
 
 load_dotenv()
 
@@ -49,7 +50,7 @@ def send_message(bot, message):
             logging.info(f'Отправлено сообщение в Telegram : {message}')
             sent_messages.append(message)
         else:
-            raise SapamBotError('СпамБот')
+            raise SpamBotError('СпамБот')
     except Exception as error:
         raise ErrorSendMessage(f'Ошибка функции отправки сообщений >> {error}')
 
@@ -121,6 +122,21 @@ def check_tokens():
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
 
+def get_homework(list_homeworks):
+    """Упрощение основной функции.
+    Здесь функционал который определяет, что появился новый статус
+    ДЗ, возвращает конкретную работу из списка работ
+    """
+    if len(list_homeworks) > 0:
+        logging.info(f'Список работ: {list_homeworks}')
+        homework = list_homeworks[0]
+        logging.info(f'Проверяемая работа:'
+                     f'{homework.get("homework_name")}')
+        return homework
+    else:
+        raise HomeWorkError('Ошибка получения данных о работе')
+
+
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
@@ -136,20 +152,15 @@ def main():
 
             response = get_api_answer(current_timestamp)
             list_homeworks = check_response(response)
-            if len(list_homeworks) > 0:
-                logging.info(f'Список работ: {list_homeworks}')
-
-                homework = list_homeworks[0]
-                logging.info(f'Проверяемая работа:'
-                             f'{homework.get("homework_name")}')
-
-                message = parse_status(homework)
-                send_message(bot, message)
+            homework = get_homework(list_homeworks)
+            message = parse_status(homework)
+            send_message(bot, message)
 
             current_timestamp = response.get('current_date')
             logging.info(f'Время из response: {current_timestamp}')
-
-        except SapamBotError as error:
+        except HomeWorkError as error:
+            logging.error(f'Не получена ДЗ {error}')
+        except SpamBotError as error:
             logging.error(f'Бот дулирует сообщения {error}')
         except ErrorSendMessage as error:
             logging.error(f'Сбой при отправке'
