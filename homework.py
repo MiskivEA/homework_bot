@@ -51,7 +51,7 @@ def send_message(bot, message):
         else:
             raise SapamBotError('СпамБот')
     except Exception as error:
-        raise ErrorSendMessage(f'Ошибка функции отправки сообщений >>> {error}')
+        raise ErrorSendMessage(f'Ошибка функции отправки сообщений >> {error}')
 
 
 def get_api_answer(current_timestamp):
@@ -149,8 +149,8 @@ def main():
             current_timestamp = response.get('current_date')
             logging.info(f'Время из response: {current_timestamp}')
 
-        except SapamBotError as eror:
-            logging.error(f'Бот дулирует сообщения')
+        except SapamBotError as error:
+            logging.error(f'Бот дулирует сообщения {error}')
         except ErrorSendMessage as error:
             logging.error(f'Сбой при отправке'
                           f'сообщения в Telegram: {error}')
@@ -161,11 +161,10 @@ def main():
             logging.error(f'{error}')
         except TypeError as error:
             logging.error(f'{error}')
+
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            if message not in sent_messages:
-                send_message(bot, message)
-                sent_messages.append(message)
+            send_message(bot, message)
             time.sleep(RETRY_TIME)
 
         finally:
