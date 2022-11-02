@@ -123,48 +123,44 @@ def main():
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time()) - WEEK * 4
-    sent_messages = ['1']
+    sent_messages = []
     while True:
         try:
-            try:
-                response = get_api_answer(current_timestamp)
-                list_homeworks = check_response(response)
-                if len(list_homeworks) > 0:
-                    logging.info(f'Список работ: {list_homeworks}')
 
-                    homework = list_homeworks[0]
-                    logging.info(f'Проверяемая работа:'
-                                 f'{homework.get("homework_name")}')
+            response = get_api_answer(current_timestamp)
+            list_homeworks = check_response(response)
+            if len(list_homeworks) > 0:
+                logging.info(f'Список работ: {list_homeworks}')
 
-                    message = parse_status(homework)
+                homework = list_homeworks[0]
+                logging.info(f'Проверяемая работа:'
+                             f'{homework.get("homework_name")}')
 
-                    try:
-                        if message not in sent_messages:
-                            send_message(bot, message)
-                            sent_messages.append(message)
-                        else:
-                            send_message(bot, 'I`m SPAM_BOT =)')
+                message = parse_status(homework)
 
-                    except ErrorSendMessage as error:
-                        logging.error(f'{error}')
-                    except Exception as error:
-                        logging.error(f'Сбой при отправке'
-                                      f'сообщения в Telegram: {error}')
+                try:
+                    if message not in sent_messages:
+                        send_message(bot, message)
+                        sent_messages.append(message)
+                    else:
+                        send_message(bot, 'I`m SPAM_BOT =)')
+                        logging.info('spam bot')
 
-                current_timestamp = response.get('current_date')
-                logging.info(f'Время из response: {current_timestamp}')
+                except Exception:
+                    raise ErrorSendMessage
 
-            except ResponseNot200 as error:
-                logging.error(f'{error}')
-                send_message(bot, f'{error}')
-            except KeyError as error:
-                logging.error(f'{error}')
-            except TypeError as error:
-                logging.error(f'{error}')
-            except Exception as error:
-                logging.error(f'API ERROR: {error}')
+            current_timestamp = response.get('current_date')
+            logging.info(f'Время из response: {current_timestamp}')
 
         except ErrorSendMessage as error:
+            logging.error(f'Сбой при отправке'
+                          f'сообщения в Telegram: {error}')
+        except ResponseNot200 as error:
+            logging.error(f'{error}')
+            send_message(bot, f'{error}')
+        except KeyError as error:
+            logging.error(f'{error}')
+        except TypeError as error:
             logging.error(f'{error}')
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
