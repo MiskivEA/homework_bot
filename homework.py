@@ -137,16 +137,6 @@ def get_homework(list_homeworks):
         raise HomeWorkError('Ошибка получения данных о работе')
 
 
-def premain(current_timestamp, bot):
-    response = get_api_answer(current_timestamp)
-    list_homeworks = check_response(response)
-    homework = get_homework(list_homeworks)
-    message = parse_status(homework)
-    send_message(bot, message)
-    current_timestamp = response.get('current_date')
-    logging.info(f'Время из response: {current_timestamp}')
-
-
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
@@ -159,8 +149,6 @@ def main():
 
     while True:
         try:
-            premain(current_timestamp, bot)
-            """
             response = get_api_answer(current_timestamp)
             list_homeworks = check_response(response)
             homework = get_homework(list_homeworks)
@@ -168,7 +156,6 @@ def main():
             send_message(bot, message)
             current_timestamp = response.get('current_date')
             logging.info(f'Время из response: {current_timestamp}')
-            """
         except HomeWorkError as error:
             logging.error(f'Не получена ДЗ {error}')
         except SpamBotError as error:
