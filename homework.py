@@ -1,13 +1,14 @@
+import logging
 import os
 import sys
+import time
 
 import requests
-from dotenv import load_dotenv
-import time
 import telegram
-import logging
+from dotenv import load_dotenv
 
-from custom_exceptions import *
+from custom_exceptions import (ErrorSendMessage, ResponseNot200,
+                               StatusIsUnregistered)
 
 load_dotenv()
 
@@ -32,7 +33,8 @@ logging.basicConfig(
     filename='bot_logs.log',
     filemode='w',
     format=('[%(asctime)s], [%(levelname)s], [%(message)s],'
-            ' [Модуль: %(module)s], [Имя функции: %(funcName)s], [Строка: %(lineno)s]')
+            ' [Модуль: %(module)s], [Имя функции: %(funcName)s],'
+            ' [Строка: %(lineno)s]')
 )
 
 
