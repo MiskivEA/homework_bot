@@ -7,9 +7,7 @@ import requests
 import telegram
 from dotenv import load_dotenv
 
-from custom_exceptions import (ErrorSendMessage, ResponseNot200,
-                               StatusIsUnregistered, SpamBotError,
-                               HomeWorkError)
+from custom_exceptions import (ErrorSendMessage, ResponseNot200, SpamBotError)
 
 load_dotenv()
 
@@ -99,30 +97,25 @@ def check_response(response):
     return response['homeworks']
 
 
-def key_in_dict(key, dictionary):
-    """Мини-функция для проверки словаря на наличие определенного ключа."""
-    if dictionary.get(key):
-        return True
-    return False
-
-
 def parse_status(homework):
     """Обработка данных АПИ о конкретной ДЗ.
     Формирование статуса ДЗ и сообщения для
     отправки в Telegram
     """
     homework_name = homework.get('homework_name')
-    if key_in_dict('status', homework):
-        homework_status = homework['status']
+    status_key = 'status'
+    if status_key in homework:
+        homework_status = homework[status_key]
+        print('status in homework TRUE')
 
-        if key_in_dict(homework_status, HOMEWORK_STATUSES):
+        if homework_status in HOMEWORK_STATUSES:
             verdict = HOMEWORK_STATUSES[homework_status]
+            print(f'verdict {verdict}')
             return (f'Изменился статус проверки работы "{homework_name}".'
                     f' {verdict}')
-        else:
-            raise StatusIsUnregistered('Несуществующий статус ДЗ')
-    else:
-        raise HomeWorkError('Отсутствует данные о статусе ДЗ')
+
+        raise KeyError('Несуществующий статус ДЗ')
+    raise KeyError('Отсутствует данные о статусе ДЗ')
 
 
 def check_tokens():
@@ -160,8 +153,6 @@ def main():
             homework = get_homework(list_homeworks)
             message = parse_status(homework)
             send_message(bot, message)
-            send_message(bot, message)
-
             current_timestamp = response.get('current_date')
             logging.info(f'Время из response: {current_timestamp}')
         except SpamBotError as error:
