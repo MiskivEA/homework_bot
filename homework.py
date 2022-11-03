@@ -19,9 +19,9 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
 RETRY_TIME = 600
+WEEK = 7 * 24 * 60 * 60
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
-WEEK = 7 * 24 * 60 * 60
 
 HOMEWORK_STATUSES = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
@@ -39,18 +39,19 @@ logging.basicConfig(
 )
 
 
-sent_messages = []
+sent_messages = ''
 
 
 def send_message(bot, message):
     """Функция отправки сообщений в Telegram."""
+    global sent_messages
     try:
-        if message not in sent_messages:
+        if message != sent_messages:
             bot.send_message(TELEGRAM_CHAT_ID, message)
             logging.info(f'Отправлено сообщение в Telegram : {message}')
-            sent_messages.append(message)
+            sent_messages = message
         else:
-            raise SpamBotError('СпамБот')
+            logging.info('Попытка отправить два одинаковых сообщения подряд')
     except Exception as error:
         raise ErrorSendMessage(f'Ошибка функции отправки сообщений >> {error}')
 
@@ -61,20 +62,21 @@ def get_api_answer(current_timestamp):
     """
     timestamp = current_timestamp
     params = {'from_date': timestamp}
-    response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    if response.status_code != 200:
-
-        raise ResponseNot200(
-            'Нет ответа API:'
-            f' Код ответа: {response.status_code}'
-            f' URL: {response.request.url}'
-            f' Headers: {response.request.headers}'
-            f' Parameters: {params}'
-        )
     try:
-        return response.json()
+        response = requests.get(ENDPOINT, headers=HEADERS, params=params)
+        if response.status_code != 200:
+            raise ResponseNot200(
+                'Нет ответа API:'
+                f' Код ответа: {response.status_code}'
+                f' URL: {response.request.url}'
+                f' Headers: {response.request.headers}'
+                f' Parameters: {params}'
+            )
+
     except Exception as error:
-        raise error
+        raise Exception(f'Ошибка обработки данных АПИ {error}')
+    else:
+        return response.json()
 
 
 def check_response(response):
@@ -83,8 +85,9 @@ def check_response(response):
     if not response_is_dict:
         raise TypeError(f'Ожидается тип данных "словарь",'
                         f'получен {type(response)}')
+
     if len(response['homeworks']) > 0:
-        correct_keys = response['homeworks'] and response['current_date']
+        correct_keys = all([response['homeworks'], response['current_date']])
         if not correct_keys:
             raise KeyError(f'Не найдены необходимые ключи словаря {response}')
 
@@ -92,10 +95,15 @@ def check_response(response):
         if not correct_type_data:
             raise TypeError(f'Ожидается тип данных "список",'
                             f'получен {type(response["homeworks"])}')
-    try:
-        return response['homeworks']
-    except Exception as error:
-        raise error
+
+    return response['homeworks']
+
+
+def key_in_dict(key, dictionary):
+    """Мини-функция для проверки словаря на наличие определенного ключа."""
+    if dictionary.get(key):
+        return True
+    return False
 
 
 def parse_status(homework):
@@ -104,17 +112,17 @@ def parse_status(homework):
     отправки в Telegram
     """
     homework_name = homework.get('homework_name')
-    if homework['status']:
+    if key_in_dict('status', homework):
         homework_status = homework['status']
 
-        try:
+        if key_in_dict(homework_status, HOMEWORK_STATUSES):
             verdict = HOMEWORK_STATUSES[homework_status]
-        except StatusIsUnregistered as error:
-            raise error
-
-        else:
             return (f'Изменился статус проверки работы "{homework_name}".'
                     f' {verdict}')
+        else:
+            raise StatusIsUnregistered('Несуществующий статус ДЗ')
+    else:
+        raise HomeWorkError('Отсутствует данные о статусе ДЗ')
 
 
 def check_tokens():
@@ -133,8 +141,6 @@ def get_homework(list_homeworks):
         logging.info(f'Проверяемая работа:'
                      f'{homework.get("homework_name")}')
         return homework
-    else:
-        raise HomeWorkError('Ошибка получения данных о работе')
 
 
 def main():
@@ -154,20 +160,18 @@ def main():
             homework = get_homework(list_homeworks)
             message = parse_status(homework)
             send_message(bot, message)
+            send_message(bot, message)
+
             current_timestamp = response.get('current_date')
             logging.info(f'Время из response: {current_timestamp}')
-        except HomeWorkError as error:
-            logging.error(f'Не получена ДЗ {error}')
         except SpamBotError as error:
-            logging.error(f'Бот дулирует сообщения {error}')
+            logging.info(f'{error}')
         except ErrorSendMessage as error:
             logging.error(f'Сбой при отправке'
                           f'сообщения в Telegram: {error}')
-        except ResponseNot200 as error:
-            logging.error(f'{error}')
-            send_message(bot, f'{error}')
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
+            logging.error(message)
             send_message(bot, message)
             time.sleep(RETRY_TIME)
         finally:
