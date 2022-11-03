@@ -84,17 +84,14 @@ def check_response(response):
         raise TypeError(f'Ожидается тип данных "словарь",'
                         f'получен {type(response)}')
 
-    if len(response['homeworks']) > 0:
-        correct_keys = all([response['homeworks'], response['current_date']])
-        if not correct_keys:
-            raise KeyError(f'Не найдены необходимые ключи словаря {response}')
-
+    correct_keys = all([response['homeworks'], response['current_date']])
+    if correct_keys:
         correct_type_data = isinstance(response['homeworks'], list)
         if not correct_type_data:
             raise TypeError(f'Ожидается тип данных "список",'
                             f'получен {type(response["homeworks"])}')
-
-    return response['homeworks']
+        return response['homeworks']
+    raise KeyError(f'Не найдены необходимые ключи словаря {response}')
 
 
 def parse_status(homework):
@@ -102,16 +99,14 @@ def parse_status(homework):
     Формирование статуса ДЗ и сообщения для
     отправки в Telegram
     """
-    homework_name = homework.get('homework_name')
     status_key = 'status'
     if status_key in homework:
+        homework_name = homework.get('homework_name')
         homework_status = homework[status_key]
         if homework_status in HOMEWORK_STATUSES:
             verdict = HOMEWORK_STATUSES[homework_status]
             return (f'Изменился статус проверки работы "{homework_name}".'
                     f' {verdict}')
-
-
 
         raise KeyError('Несуществующий статус ДЗ')
     raise KeyError('Отсутствует данные о статусе ДЗ')
@@ -127,7 +122,7 @@ def get_homework(list_homeworks):
     Здесь функционал который определяет, что появился новый статус
     ДЗ, возвращает конкретную работу из списка работ
     """
-    if len(list_homeworks) > 0:
+    if list_homeworks:
         logging.info(f'Список работ: {list_homeworks}')
         homework = list_homeworks[0]
         logging.info(f'Проверяемая работа:'
@@ -148,10 +143,11 @@ def main():
     while True:
         try:
             response = get_api_answer(current_timestamp)
-            list_homeworks = check_response(response)
-            homework = get_homework(list_homeworks)
-            message = parse_status(homework)
-            send_message(bot, message)
+            if response.get('homeworks'):
+                list_homeworks = check_response(response)
+                homework = get_homework(list_homeworks)
+                message = parse_status(homework)
+                send_message(bot, message)
             current_timestamp = response.get('current_date')
             logging.info(f'Время из response: {current_timestamp}')
         except SpamBotError as error:
@@ -163,7 +159,6 @@ def main():
             message = f'Сбой в работе программы: {error}'
             logging.error(message)
             send_message(bot, message)
-            time.sleep(RETRY_TIME)
         finally:
             time.sleep(RETRY_TIME)
 
