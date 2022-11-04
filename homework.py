@@ -7,7 +7,7 @@ import requests
 import telegram
 from dotenv import load_dotenv
 
-from custom_exceptions import (ErrorSendMessage, ResponseNot200, SpamBotError)
+from custom_exceptions import (ErrorSendMessage, ResponseNot200)
 
 load_dotenv()
 
@@ -37,19 +37,22 @@ logging.basicConfig(
 )
 
 
-sent_messages = ''
+class MessageWithoutDublicate:
+    def __init__(self, bot, previous_message=None):
+        self.previous_message = previous_message or ''
+        self.bot = bot
+
+    def check_and_send_message(self, message):
+        if message != self.previous_message:
+            send_message(self.bot, message)
+            self.previous_message = message
 
 
 def send_message(bot, message):
     """Функция отправки сообщений в Telegram."""
-    global sent_messages
     try:
-        if message != sent_messages:
-            bot.send_message(TELEGRAM_CHAT_ID, message)
-            logging.info(f'Отправлено сообщение в Telegram : {message}')
-            sent_messages = message
-        else:
-            logging.info('Попытка отправить два одинаковых сообщения подряд')
+        bot.send_message(TELEGRAM_CHAT_ID, message)
+        logging.info(f'Отправлено сообщение в Telegram : {message}')
     except Exception as error:
         raise ErrorSendMessage(f'Ошибка функции отправки сообщений >> {error}')
 
@@ -70,28 +73,35 @@ def get_api_answer(current_timestamp):
                 f' Headers: {response.request.headers}'
                 f' Parameters: {params}'
             )
-
+        response_json = response.json()
     except Exception as error:
         raise Exception(f'Ошибка обработки данных АПИ {error}')
     else:
-        return response.json()
+        return response_json
 
 
-def check_response(response):
-    """Вытаскиваю список работ из ответа АПИ и возвращаю их."""
-    response_is_dict = isinstance(response, dict)
-    if not response_is_dict:
+def check_response(response_json):
+    """Вытаскиваю список работ из ответа АПИ и возвращаю их.
+    Проверка на то, что:
+    1. response это словарь
+    2. ключи homeworks и current_date существуют
+    3. под ключом homeworks находится список
+    """
+    if not isinstance(response_json, dict):
         raise TypeError(f'Ожидается тип данных "словарь",'
-                        f'получен {type(response)}')
+                        f'получен {type(response_json)}')
 
-    correct_keys = all([response['homeworks'], response['current_date']])
-    if correct_keys:
-        correct_type_data = isinstance(response['homeworks'], list)
-        if not correct_type_data:
-            raise TypeError(f'Ожидается тип данных "список",'
-                            f'получен {type(response["homeworks"])}')
-        return response['homeworks']
-    raise KeyError(f'Не найдены необходимые ключи словаря {response}')
+    if not len(response_json) > 0:
+        raise Exception('Пустой словарь')
+
+    correct_keys = 'homeworks' and 'current_date' in response_json
+    if not correct_keys:
+        return False
+
+    if not isinstance(response_json['homeworks'], list):
+        raise TypeError(f'Ожидается тип данных "список",'
+                        f'получен {type(response_json["homeworks"])}')
+    return response_json['homeworks']
 
 
 def parse_status(homework):
@@ -99,17 +109,17 @@ def parse_status(homework):
     Формирование статуса ДЗ и сообщения для
     отправки в Telegram
     """
-    status_key = 'status'
-    if status_key in homework:
-        homework_name = homework.get('homework_name')
-        homework_status = homework[status_key]
-        if homework_status in HOMEWORK_STATUSES:
-            verdict = HOMEWORK_STATUSES[homework_status]
-            return (f'Изменился статус проверки работы "{homework_name}".'
-                    f' {verdict}')
+    if 'status' not in homework:
+        raise KeyError('Нет ключа статус в словаре')
+    homework_name = homework.get('homework_name')
+    homework_status = homework.get('status')
 
-        raise KeyError('Несуществующий статус ДЗ')
-    raise KeyError('Отсутствует данные о статусе ДЗ')
+    if homework_status not in HOMEWORK_STATUSES:
+        raise KeyError('Ошибка получения статуса ДЗ')
+
+    verdict = HOMEWORK_STATUSES[homework_status]
+    return (f'Изменился статус проверки работы "{homework_name}".'
+            f' {verdict}')
 
 
 def check_tokens():
@@ -132,6 +142,7 @@ def get_homework(list_homeworks):
 
 def main():
     """Основная логика работы бота."""
+
     if not check_tokens():
         logging.critical('Отсутствие обязательных переменных'
                          ' окружения во время запуска бота')
@@ -139,26 +150,25 @@ def main():
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time()) - WEEK * 4
+    sender = MessageWithoutDublicate(bot)
 
     while True:
         try:
-            response = get_api_answer(current_timestamp)
-            if response.get('homeworks'):
-                list_homeworks = check_response(response)
+            response_json = get_api_answer(current_timestamp)
+            list_homeworks = check_response(response_json)
+            if list_homeworks:
                 homework = get_homework(list_homeworks)
                 message = parse_status(homework)
-                send_message(bot, message)
-            current_timestamp = response.get('current_date')
+                sender.check_and_send_message(message)
+            current_timestamp = response_json.get('current_date')
             logging.info(f'Время из response: {current_timestamp}')
-        except SpamBotError as error:
-            logging.info(f'{error}')
         except ErrorSendMessage as error:
             logging.error(f'Сбой при отправке'
                           f'сообщения в Telegram: {error}')
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message)
-            send_message(bot, message)
+            sender.check_and_send_message(message)
         finally:
             time.sleep(RETRY_TIME)
 
