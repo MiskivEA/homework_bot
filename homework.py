@@ -6,7 +6,6 @@ import time
 import requests
 import telegram
 from dotenv import load_dotenv
-from pydantic import BaseModel
 
 from custom_exceptions import (ErrorSendMessage, ResponseNot200)
 
@@ -17,7 +16,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_TIME = 6
+RETRY_TIME = 10
 WEEK = 7 * 24 * 60 * 60
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
@@ -36,11 +35,6 @@ logging.basicConfig(
             ' [Модуль: %(module)s], [Имя функции: %(funcName)s],'
             ' [Строка: %(lineno)s]')
 )
-
-
-class ResponseData(BaseModel):
-    homeworks: list
-    current_date: int
 
 
 class MessageWithoutDublicate:
@@ -111,13 +105,7 @@ def check_response(response_json):
     if not isinstance(response_json['homeworks'], list):
         raise TypeError(f'Ожидается тип данных "список",'
                         f'получен {type(response_json["homeworks"])}')
-    response_data = ResponseData()
     return response_json['homeworks']
-
-
-
-
-
 
 
 def parse_status(homework):
