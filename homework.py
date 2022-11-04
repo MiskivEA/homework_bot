@@ -112,7 +112,12 @@ def check_response(response_json):
         raise TypeError(f'Ожидается тип данных "список",'
                         f'получен {type(response_json["homeworks"])}')
     response_data = ResponseData()
-    return response_json['homeworks']ddd
+    return response_json['homeworks']
+
+
+
+
+
 
 
 def parse_status(homework):
