@@ -16,7 +16,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_TIME = 10
+RETRY_TIME = 600
 WEEK = 7 * 24 * 60 * 60
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
@@ -98,7 +98,7 @@ def check_response(response_json):
     if not len(response_json) > 0:
         raise Exception('Пустой словарь')
 
-    correct_keys = 'homeworks' and 'current_date' in response_json
+    correct_keys = ('homeworks' and 'current_date') in response_json
     if not correct_keys:
         return False
 
@@ -142,7 +142,6 @@ def get_homework(list_homeworks):
         logging.info(f'Проверяемая работа:'
                      f'{homework.get("homework_name")}')
         return homework
-    raise Exception('Ошибка извлечения ДЗ')
 
 
 def main():
@@ -153,7 +152,7 @@ def main():
         sys.exit('Ошибка доступа к токенам')
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time()) - WEEK * 4
+    current_timestamp = int(time.time()) - WEEK
     sender = MessageWithoutDublicate(bot)
 
     while True:
