@@ -16,7 +16,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-RETRY_TIME = 3
+RETRY_TIME = 600
 WEEK = 7 * 24 * 60 * 60
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
@@ -38,11 +38,15 @@ logging.basicConfig(
 
 
 class MessageWithoutDublicate:
+    """Функционал предотвращения отправки дублирующих сообщений в Telegram."""
+
     def __init__(self, bot, previous_message=None):
+        """Создания объекта-отправителя сообщений."""
         self.previous_message = previous_message or ''
         self.bot = bot
 
     def check_and_send_message(self, message):
+        """Проверка, отправка сообщения, перезапись отправленного сообщения."""
         if message != self.previous_message:
             send_message(self.bot, message)
             self.previous_message = message
@@ -129,7 +133,7 @@ def check_tokens():
 
 def get_homework(list_homeworks):
     """Упрощение основной функции.
-    Здесь функционал который определяет, что появился новый статус
+    Здесь функционал, который определяет, что появился новый статус
     ДЗ, возвращает конкретную работу из списка работ
     """
     if list_homeworks:
@@ -138,18 +142,18 @@ def get_homework(list_homeworks):
         logging.info(f'Проверяемая работа:'
                      f'{homework.get("homework_name")}')
         return homework
+    raise Exception('Ошибка извлечения ДЗ')
 
 
 def main():
     """Основная логика работы бота."""
-
     if not check_tokens():
         logging.critical('Отсутствие обязательных переменных'
                          ' окружения во время запуска бота')
         sys.exit('Ошибка доступа к токенам')
 
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time()) - WEEK * 4
+    current_timestamp = int(time.time())
     sender = MessageWithoutDublicate(bot)
 
     while True:
